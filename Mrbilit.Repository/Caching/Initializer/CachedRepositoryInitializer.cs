@@ -9,7 +9,7 @@ public class CachedRepositoryInitializer : ICachedRepositoryInitializer
         this.serviceFactory = serviceFactory;
     }
 
-    public async Task InitAllRepositoriesOfAssemblyContaining<T>()
+    public void InitAllRepositoriesOfAssemblyContaining<T>()
     {
         var assembly = typeof(T).Assembly;
         var allCachedRepos = assembly.GetTypes().Where(t => IsSubclassOfRawGeneric(typeof(CachedRepository<>), t));
@@ -17,7 +17,7 @@ public class CachedRepositoryInitializer : ICachedRepositoryInitializer
         {
             var svc = serviceFactory.InstantiateByType<IInitializable>(repo);
             if (svc == null) continue;
-            await svc.InitAsync();
+            svc.InitAsync().GetAwaiter().GetResult();
         }
     }
 

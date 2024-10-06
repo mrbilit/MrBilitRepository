@@ -3,5 +3,5 @@ namespace MrBilit.Repository.Caching.Initializer;
 
 public interface ICachedRepositoryInitializer
 {
-    Task InitAllRepositoriesOfAssemblyContaining<T>();
+    void InitAllRepositoriesOfAssemblyContaining<T>();
 }

@@ -2,6 +2,8 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using Mrbilit.Repository.Specifications;
+
 using MrBilit.Repository.Caching;
 using MrBilit.Repository.Caching.CacheSynchronization;
 using MrBilit.Repository.Caching.Include;
@@ -16,6 +18,7 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     private readonly ICacheSynchronizationContext _cacheSynchronizationContext;
     private bool _cacheConfigured = false;
     private static IncludeSpecification<T>? s_includeSpecification = null;
+    private static BaseSpecification<T>? s_baseSpecification = null;
     private readonly DbContext _dbContext;
 
     public CachedRepository(DbContext dbContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext) : base(dbContext)
@@ -35,6 +38,10 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     private async ValueTask<IEnumerable<T>> GetCacheValues()
     {
         var dbSet = _dbContext.Set<T>().AsQueryable();
+        if (s_baseSpecification != null)
+        {
+            dbSet = ApplySpecification(s_baseSpecification);
+        }
         if (s_includeSpecification != null)
         {
             dbSet = ApplyIncludes(dbSet, s_includeSpecification.Includes);
@@ -54,9 +61,10 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
 
     protected abstract void ConfigureCache();
 
-    protected void EnableListCache(IncludeSpecification<T> includeSpecification)
+    protected void EnableListCache(IncludeSpecification<T> includeSpecification, BaseSpecification<T> specification = null)
     {
         s_includeSpecification = includeSpecification;
+        s_baseSpecification = specification;
         if (_cacheConfigured)
             throw new InvalidOperationException("Cannot reconfigure cache after initialization");
 
@@ -80,6 +88,45 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
             await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
         }
         return changeCount;
+    }
+
+    public async override Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        var result = await base.AddAsync(entity, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+        return result;
+    }
+
+    public override async Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        var result = await base.AddRangeAsync(entities, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+        return result;
+    }
+
+    public override async Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        await base.DeleteAsync(entity, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+
+    }
+
+    public override async Task DeleteRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        await base.DeleteRangeAsync(entities, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+    }
+
+    public override async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        await base.UpdateAsync(entity, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+    }
+
+    public override async Task UpdateRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        await base.UpdateRangeAsync(entities, cancellationToken);
+        await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
     }
 
     /// <inheritdoc/>

@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
+using Mrbilit.Repository.Caching.CacheSynchronization.RedisPubSub;
+
 using MrBilit.Repository.Caching.CacheSynchronization;
 using MrBilit.Repository.Caching.CacheSynchronization.RedisPubSub;
 
@@ -11,6 +13,7 @@ public static class RedisDependencyInjectionConfiguration
     {
         configurator.Services.AddOptions<RedisPubSubOptions>().Configure(options);
         configurator.Services.AddSingleton<ICacheSynchronizationPublisher, RedisPubSubCachePublisher>();
-        configurator.Services.AddSingleton<ICacheSynchronizationSubscriber, RedisPubSubCacheSubscriber>();
+        configurator.Services.AddScoped<ICacheSynchronizationSubscriber, RedisPubSubCacheSubscriber>();
+        configurator.Services.AddHostedService<RedisConsumerBackgroundService>();
     }
 }
