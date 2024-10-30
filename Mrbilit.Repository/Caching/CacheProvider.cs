@@ -5,7 +5,7 @@ namespace MrBilit.Repository.Caching;
 public class CacheProvider<T> : ICacheProvider<T> where T : class
 {
     private IListCacheProvider<T>? _listCacheProvider = null;
-    private Dictionary<string, IMapCacheProvider<T>> _mapCacheProvider = new();
+    private static Dictionary<string, IMapCacheProvider<T>> _mapCacheProvider = new();
 
     private readonly IListCacheProviderFactory _listCacheProviderFactory;
     private readonly IMapCacheProviderFactory _mapCacheProviderFactory;
@@ -46,7 +46,8 @@ public class CacheProvider<T> : ICacheProvider<T> where T : class
             throw new ArgumentNullException(nameof(name));
         }
 
-        _mapCacheProvider.Add(name, _mapCacheProviderFactory.Create(keySelector));
+        if (!_mapCacheProvider.ContainsKey(name))
+            _mapCacheProvider.Add(name, _mapCacheProviderFactory.Create(keySelector));
     }
 
     public bool ListCacheEnabled => _listCacheProvider != null;

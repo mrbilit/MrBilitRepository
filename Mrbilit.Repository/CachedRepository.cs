@@ -61,10 +61,14 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
 
     protected abstract void ConfigureCache();
 
-    protected void EnableListCache(IncludeSpecification<T> includeSpecification, BaseSpecification<T> specification = null)
+    protected void ConfigureCacheDefaultSpecification(IncludeSpecification<T> includeSpecification, BaseSpecification<T> specification = null)
     {
         s_includeSpecification = includeSpecification;
         s_baseSpecification = specification;
+    }
+
+    protected void EnableListCache()
+    {
         if (_cacheConfigured)
             throw new InvalidOperationException("Cannot reconfigure cache after initialization");
 
@@ -305,22 +309,14 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
         }
     }
 
-    public async Task<T?> GetByIdWithCacheAsync<TId>(string mapNAme, TId id, CancellationToken cancellationToken = default)
+    public async Task<T?> GetByIdAsync<TId>(string mapNAme, TId id, CancellationToken cancellationToken = default)
     {
         if (id is null)
         {
-            throw new Exception();
+            throw new Exception("Id is null");
         }
-        try
-        {
-            var x = await _cacheProvider.GetByKeyAsync(mapNAme, id.ToString());
-            return x;
-        }
-        catch (Exception ex)
-        {
-            return await GetByIdAsync(id, cancellationToken);
-        }
-
+        var x = await _cacheProvider.GetByKeyAsync(mapNAme, id.ToString());
+        return x;
     }
 
     public async Task Resync()

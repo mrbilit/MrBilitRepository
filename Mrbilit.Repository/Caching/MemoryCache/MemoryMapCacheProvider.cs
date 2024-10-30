@@ -1,4 +1,5 @@
 ﻿using MrBilit.Repository.Abstractions;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace MrBilit.Repository.Caching.MemoryCache
 {
     public class MemoryMapCacheProvider<T> : INonSynchronizedCacheProvider<T>, IMapCacheProvider<T> where T : class
     {
-        private static ConcurrentDictionary<string, T>? _cache;
+        private ConcurrentDictionary<string, T>? _cache;
         private Func<T, string> _keySelector;
 
         public MemoryMapCacheProvider(Func<T, string> keySelector)
@@ -33,7 +34,11 @@ namespace MrBilit.Repository.Caching.MemoryCache
             _cache.Clear();
             foreach (var value in values)
             {
-                _cache.AddOrUpdate(_keySelector(value), _ => value, (_, _) => value);
+                var key = _keySelector(value);
+                if ((!string.IsNullOrEmpty(key)))
+                {
+                    _cache.AddOrUpdate(key, _ => value, (_, _) => value);
+                }
             }
 
             return ValueTask.CompletedTask;
