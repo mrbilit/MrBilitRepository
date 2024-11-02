@@ -30,6 +30,15 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
         _cacheConfigured = true;
     }
 
+    public CachedRepository(DbContext dbContext, DbContext readOnlyContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext) : base(dbContext, readOnlyContext)
+    {
+        _cacheProvider = cacheProvider;
+        _cacheSynchronizationContext = cacheSynchronizationContext;
+        _dbContext = dbContext;
+        ConfigureCache();
+        _cacheConfigured = true;
+    }
+
     public async Task InitAsync()
     {
         await _cacheProvider.InitAsync(await GetCacheValues());
