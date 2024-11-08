@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.Design;
-using System.Reflection;
-
-using Ardalis.Specification;
+﻿using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
 
 using Microsoft.EntityFrameworkCore;
+
+using Mrbilit.Repository;
+using Mrbilit.Repository.Data;
 
 using MrBilit.Repository.Abstractions;
 
@@ -12,14 +12,13 @@ namespace MrBilit.Repository;
 
 public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.RepositoryBase<T>, IRepository<T> where T : class
 {
-    private readonly DbContext _readOnlyContext;
-    public Repository(DbContext dbContext) : base(dbContext)
-    {
-    }
+    private readonly ApplicationDbContextBaseReadOnlyBase? _readOnlyContext;
+    private readonly IDatabaseUtility? _databaseUtility;
 
-    public Repository(DbContext dbContext, DbContext readonlyDbContext) : base(dbContext)
+    public Repository(ApplicationDbContextBase dbContext, ApplicationDbContextBaseReadOnlyBase? readonlyDbContext, IDatabaseUtility? databaseUtility) : base(dbContext)
     {
-        _readOnlyContext = dbContext;
+        _readOnlyContext = readonlyDbContext;
+        _databaseUtility = databaseUtility;
     }
 
     public override async Task<bool> AnyAsync(ISpecification<T> specification, CancellationToken cancellationToken = default)
@@ -183,7 +182,11 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
             Console.WriteLine("query is noTracking");
             return true;
         }
-        if (IsView())
+        if (_databaseUtility == null)
+        {
+            throw new Exception("IDatabaseUtility implementation type is not initialized.");
+        }
+        if (_databaseUtility.IsView(typeof(T)))
         {
             Console.WriteLine("it is view");
             return true;
@@ -198,7 +201,11 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
         {
             return useReadOnlyContext.Value;
         }
-        if (ContainsEntityType(typeof(TResult)))
+        if (_databaseUtility == null)
+        {
+            throw new Exception("IDatabaseUtility implementation type is not initialized.");
+        }
+        if (_databaseUtility.IsUsedEntityTypes(typeof(TResult)))
         {
             Console.WriteLine("contains nested entity");
 
@@ -208,38 +215,5 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
 
     }
 
-    private bool IsView()
-    {
-        var mapping = _readOnlyContext.Model.FindEntityType(typeof(T));
-        if (mapping == null)
-            return false;
-        var schema = mapping.GetSchema;
-        var tableName = mapping.GetTableName;
-        var result = _readOnlyContext.Database.ExecuteSqlRaw(
-        $"SELECT CASE WHEN EXISTS (SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{tableName}') THEN 1 ELSE 0 END");
-        return result == 1;
-    }
 
-    private bool IsEntity(Type type)
-    {
-        return _readOnlyContext.Model.FindEntityType(type) != null;
-    }
-
-    private bool ContainsEntityType(Type type)
-    {
-        if (IsEntity(type))
-            return true;
-
-        var nestedTypes = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-        .Select(f => f.FieldType)
-        .Distinct();
-
-        foreach (var nestedType in nestedTypes)
-        {
-            if (IsEntity(nestedType))
-                return true;
-        }
-
-        return false;
-    }
 }

@@ -2,6 +2,8 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using Mrbilit.Repository;
+using Mrbilit.Repository.Data;
 using Mrbilit.Repository.Specifications;
 
 using MrBilit.Repository.Caching;
@@ -21,16 +23,7 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     private static BaseSpecification<T>? s_baseSpecification = null;
     private readonly DbContext _dbContext;
 
-    public CachedRepository(DbContext dbContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext) : base(dbContext)
-    {
-        _cacheProvider = cacheProvider;
-        _cacheSynchronizationContext = cacheSynchronizationContext;
-        _dbContext = dbContext;
-        ConfigureCache();
-        _cacheConfigured = true;
-    }
-
-    public CachedRepository(DbContext dbContext, DbContext readOnlyContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext) : base(dbContext, readOnlyContext)
+    public CachedRepository(ApplicationDbContextBase dbContext, ApplicationDbContextBaseReadOnlyBase readOnlyContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext, IDatabaseUtility databaseUtility) : base(dbContext, readOnlyContext, databaseUtility)
     {
         _cacheProvider = cacheProvider;
         _cacheSynchronizationContext = cacheSynchronizationContext;
