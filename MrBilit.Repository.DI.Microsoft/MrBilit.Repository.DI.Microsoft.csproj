@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.20</Version>
+    <Version>1.0.21</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Mrbilit.Persistence\Mrbilit.Persistence.csproj" />
     <ProjectReference Include="..\Mrbilit.Repository\Mrbilit.Repository.csproj" />
   </ItemGroup>
 

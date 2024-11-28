@@ -79,6 +79,11 @@ public class SqlServerUtility : IDatabaseUtility
 
     private bool ContainsEntityType(Type type)
     {
+        if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime))
+        {
+            return false;
+        }
+
         if (_entities.Any(p => p == type))
             return true;
 
