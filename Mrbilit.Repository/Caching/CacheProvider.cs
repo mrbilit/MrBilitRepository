@@ -83,6 +83,27 @@ public class CacheProvider<T> : ICacheProvider<T> where T : class
         return provider.GetValueOrDefaultAsync(key);
     }
 
+    public T? GetByKey(string mapName, string key)
+    {
+        if (mapName is null)
+        {
+            throw new ArgumentNullException(nameof(mapName));
+        }
+
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        var provider = _mapCacheProvider.GetValueOrDefault(mapName);
+        if (provider == null)
+        {
+            throw new InvalidOperationException("Cache is not configured with name = " + mapName);
+        }
+
+        return provider.GetValueOrDefault(key);
+    }
+
     public async ValueTask ResyncAsync(IEnumerable<T> values)
     {
         if (_listCacheProvider is INonSynchronizedCacheProvider<T> listProvider)
@@ -97,5 +118,15 @@ public class CacheProvider<T> : ICacheProvider<T> where T : class
                 await mapProvider.ResyncAsync(values);
             }
         }
+    }
+
+    public IEnumerable<T> GetList()
+    {
+        if (_listCacheProvider == null)
+        {
+            throw new InvalidOperationException("List cache in not enabled on this repository.");
+        }
+
+        return _listCacheProvider.GetList();
     }
 }

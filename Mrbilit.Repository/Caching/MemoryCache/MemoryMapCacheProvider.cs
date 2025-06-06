@@ -1,11 +1,5 @@
 ﻿using MrBilit.Repository.Abstractions;
-
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MrBilit.Repository.Caching.MemoryCache
 {
@@ -26,6 +20,15 @@ namespace MrBilit.Repository.Caching.MemoryCache
                 throw new InvalidOperationException("Memory map cache is not intialized yet.");
             }
             return ValueTask.FromResult(_cache.GetValueOrDefault(key));
+        }
+
+        public T? GetValueOrDefault(string key)
+        {
+            if (_cache == null)
+            {
+                throw new InvalidOperationException("Memory map cache is not intialized yet.");
+            }
+            return _cache.GetValueOrDefault(key);
         }
 
         public ValueTask InitAsync(IEnumerable<T> values)

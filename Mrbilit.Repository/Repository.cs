@@ -14,11 +14,13 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
 {
     private readonly ApplicationDbContextBaseReadOnlyBase? _readOnlyContext;
     private readonly IDatabaseUtility? _databaseUtility;
+    private readonly ApplicationDbContextBase _applicationDbContextBase;
 
     public Repository(ApplicationDbContextBase dbContext, ApplicationDbContextBaseReadOnlyBase? readonlyDbContext, IDatabaseUtility? databaseUtility) : base(dbContext)
     {
         _readOnlyContext = readonlyDbContext;
         _databaseUtility = databaseUtility;
+        _applicationDbContextBase = dbContext;
     }
 
     public override async Task<bool> AnyAsync(ISpecification<T> specification, CancellationToken cancellationToken = default)
@@ -174,12 +176,10 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
     {
         if (_readOnlyContext == null)
         {
-            Console.WriteLine("readonlyDb is null");
             return false;
         }
         if (specification.AsNoTracking)
         {
-            Console.WriteLine("query is noTracking");
             return true;
         }
         if (_databaseUtility == null)
@@ -188,7 +188,6 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
         }
         if (_databaseUtility.IsView(typeof(T)))
         {
-            Console.WriteLine("it is view");
             return true;
         }
         return null;
@@ -215,5 +214,24 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
 
     }
 
+    public virtual T? FirstOrDefault(ISpecification<T> specification)
+    {
+        var query = ApplySpecification(specification);
+        return query.FirstOrDefault();
+    }
 
+    public virtual TResult? FirstOrDefault<TResult>(ISpecification<T, TResult> specification)
+    {
+        return ApplySpecification(specification).FirstOrDefault();
+    }
+
+    public virtual List<T> List()
+    {
+        return _applicationDbContextBase.Set<T>().ToList();
+    }
+
+    public virtual List<T> List(ISpecification<T> specification)
+    {
+        return ApplySpecification(specification).ToList();
+    }
 }

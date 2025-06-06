@@ -6,6 +6,12 @@ public class MemoryListCacheProvider<T> : INonSynchronizedCacheProvider<T>, ILis
 {
     private static List<T>? _values = null;
 
+    public IEnumerable<T> GetList()
+    {
+        if (_values == null) throw new InvalidOperationException("Memory list cache is not initialized yet");
+        return _values.AsEnumerable();
+    }
+
     public ValueTask<IEnumerable<T>> GetListAsync()
     {
         if (_values == null) throw new InvalidOperationException("Memory list cache is not initialized yet");
