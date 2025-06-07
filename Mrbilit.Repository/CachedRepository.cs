@@ -154,11 +154,23 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     {
         if (_cacheProvider.ListCacheEnabled)
         {
-            return (await GetCacheList(specification)).FirstOrDefault();
+            return (await GetCacheListAsync(specification)).FirstOrDefault();
         }
         else
         {
             return await base.FirstOrDefaultAsync(specification, cancellationToken);
+        }
+    }
+
+    public override T? FirstOrDefault(ISpecification<T> specification)
+    {
+        if (_cacheProvider.ListCacheEnabled)
+        {
+            return (GetCacheList(specification)).FirstOrDefault();
+        }
+        else
+        {
+            return base.FirstOrDefault(specification);
         }
     }
 
@@ -172,6 +184,18 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
         else
         {
             return await base.FirstOrDefaultAsync(specification, cancellationToken);
+        }
+    }
+
+    public virtual TResult? FirstOrDefault<TResult>(ISpecification<T, TResult> specification)
+    {
+        if (_cacheProvider.ListCacheEnabled)
+        {
+            return specification.Evaluate(_cacheProvider.GetList()).FirstOrDefault();
+        }
+        else
+        {
+            return base.FirstOrDefault(specification);
         }
     }
 
@@ -214,16 +238,40 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
         }
     }
 
+    public override List<T> List()
+    {
+        if (_cacheProvider.ListCacheEnabled)
+        {
+            return (_cacheProvider.GetList()).ToList();
+        }
+        else
+        {
+            return base.List();
+        }
+    }
+
     /// <inheritdoc/>
     public override async Task<List<T>> ListAsync(ISpecification<T> specification, CancellationToken cancellationToken = default)
     {
         if (_cacheProvider.ListCacheEnabled)
         {
-            return (await GetCacheList(specification)).ToList();
+            return (await GetCacheListAsync(specification)).ToList();
         }
         else
         {
             return await base.ListAsync(specification, cancellationToken);
+        }
+    }
+
+    public override List<T> List(ISpecification<T> specification)
+    {
+        if (_cacheProvider.ListCacheEnabled)
+        {
+            return GetCacheList(specification).ToList();
+        }
+        else
+        {
+            return base.List(specification);
         }
     }
 
@@ -245,7 +293,7 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     {
         if (_cacheProvider.ListCacheEnabled)
         {
-            return (await GetCacheList(specification)).Count();
+            return (await GetCacheListAsync(specification)).Count();
         }
         else
         {
@@ -271,7 +319,7 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     {
         if (_cacheProvider.ListCacheEnabled)
         {
-            return (await GetCacheList(specification)).Any();
+            return (await GetCacheListAsync(specification)).Any();
         }
         else
         {
@@ -297,7 +345,7 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     {
         if (_cacheProvider.ListCacheEnabled)
         {
-            foreach (var item in await GetCacheList(specification))
+            foreach (var item in await GetCacheListAsync(specification))
             {
                 yield return item;
             }
@@ -321,16 +369,33 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
         return x;
     }
 
+    public T? GetById<TId>(string mapNAme, TId id)
+    {
+        if (id is null)
+        {
+            throw new Exception("Id is null");
+        }
+        var x = _cacheProvider.GetByKey(mapNAme, id.ToString());
+        return x;
+    }
+
     public async Task Resync()
     {
 
         await _cacheProvider.ResyncAsync(await GetCacheValues());
     }
 
-    private async ValueTask<IEnumerable<T>> GetCacheList(ISpecification<T> specification)
+    private async ValueTask<IEnumerable<T>> GetCacheListAsync(ISpecification<T> specification)
     {
         VerifyIncludes(specification);
         return specification.Evaluate(await _cacheProvider.GetListAsync());
+
+    }
+
+    private IEnumerable<T> GetCacheList(ISpecification<T> specification)
+    {
+        VerifyIncludes(specification);
+        return specification.Evaluate(_cacheProvider.GetList());
 
     }
 

@@ -7,6 +7,8 @@ public interface ICacheProvider<T> where T : class
     public Task InitAsync(IEnumerable<T> values);
     public bool ListCacheEnabled { get; }
     public ValueTask<IEnumerable<T>> GetListAsync();
+    public IEnumerable<T> GetList();
     public ValueTask<T?> GetByKeyAsync(string mapName, string key);
+    public T? GetByKey(string mapName, string key);
     ValueTask ResyncAsync(IEnumerable<T> values);
 }

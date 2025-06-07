@@ -11,4 +11,9 @@ public abstract class ApplicationDbContextBase : DbContext
     {
 
     }
+
+    protected ApplicationDbContextBase() : base()
+    {
+
+    }
 }
