@@ -43,9 +43,15 @@ public class DependencyInjectionConfigurator
         return this;
     }
 
-    public DependencyInjectionConfigurator AddDbContext<T>(Action<DbContextOptionsBuilder>? optionsBuilder = null) where T : ApplicationDbContextBase
+    public DependencyInjectionConfigurator AddDbContext<T>(Action<DbContextOptionsBuilder>? optionsBuilder = null, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped) where T : ApplicationDbContextBase
     {
-        Services.AddDbContext<ApplicationDbContextBase, T>(optionsBuilder);
+        Services.AddDbContext<ApplicationDbContextBase, T>(optionsBuilder, serviceLifetime);
+        return this;
+    }
+
+    public DependencyInjectionConfigurator AddDbContextPool<T>(Action<DbContextOptionsBuilder> optionsBuilder, int poolSize = 1024) where T : ApplicationDbContextBase
+    {
+        Services.AddDbContextPool<ApplicationDbContextBase, T>(optionsBuilder, poolSize);
         return this;
     }
 

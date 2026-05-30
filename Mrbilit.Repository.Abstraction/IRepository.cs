@@ -8,4 +8,6 @@ public interface IRepository<T> : Ardalis.Specification.IRepositoryBase<T> where
     List<T> List();
     List<T> List(ISpecification<T> specification);
     TResult? FirstOrDefault<TResult>(ISpecification<T, TResult> specification);
+    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task CommitAsync(CancellationToken cancellationToken = default);
 }
