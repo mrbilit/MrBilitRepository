@@ -3,6 +3,6 @@
     public interface ICacheSynchronizationContext
     {
         public ValueTask BroadcastResyncRequest(Type type);
-        public ValueTask PerformResync(Type type);
+        public Task PerformResync(Type type);
     }
 }
