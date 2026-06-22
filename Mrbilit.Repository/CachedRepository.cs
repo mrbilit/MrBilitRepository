@@ -1,6 +1,7 @@
 ﻿using Ardalis.Specification;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Mrbilit.Repository;
 using Mrbilit.Repository.Data;
@@ -22,6 +23,8 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     private static IncludeSpecification<T>? s_includeSpecification = null;
     private static BaseSpecification<T>? s_baseSpecification = null;
     private readonly DbContext _dbContext;
+    private IDbContextTransaction? _currentTransaction;
+
 
     public CachedRepository(ApplicationDbContextBase dbContext, ApplicationDbContextBaseReadOnlyBase readOnlyContext, ICacheProvider<T> cacheProvider, ICacheSynchronizationContext cacheSynchronizationContext, IDatabaseUtility databaseUtility) : base(dbContext, readOnlyContext, databaseUtility)
     {
@@ -383,6 +386,35 @@ public abstract class CachedRepository<T> : Repository<T>, ISynchronizable, IIni
     {
 
         await _cacheProvider.ResyncAsync(await GetCacheValues());
+    }
+
+    public override async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction is not null)
+            throw new InvalidOperationException("A transaction has already been started.");
+        _currentTransaction = await _dbContext.Database.BeginTransactionAsync();
+    }
+
+    public override async Task CommitAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction is null)
+            throw new InvalidOperationException("A transaction has not been started.");
+
+        try
+        {
+            await _currentTransaction.CommitAsync();
+            await _cacheSynchronizationContext.BroadcastResyncRequest(GetType());
+        }
+        catch (Exception)
+        {
+            await _currentTransaction.RollbackAsync();
+            throw;
+        }
+        finally
+        {
+            _currentTransaction.Dispose();
+            _currentTransaction = null;
+        }
     }
 
     private async ValueTask<IEnumerable<T>> GetCacheListAsync(ISpecification<T> specification)

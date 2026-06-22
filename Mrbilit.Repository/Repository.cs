@@ -2,6 +2,7 @@
 using Ardalis.Specification.EntityFrameworkCore;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Mrbilit.Repository;
 using Mrbilit.Repository.Data;
@@ -15,6 +16,8 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
     private readonly ApplicationDbContextBaseReadOnlyBase? _readOnlyContext;
     private readonly IDatabaseUtility? _databaseUtility;
     private readonly ApplicationDbContextBase _applicationDbContextBase;
+    private IDbContextTransaction? _currentTransaction;
+
 
     public Repository(ApplicationDbContextBase dbContext, ApplicationDbContextBaseReadOnlyBase? readonlyDbContext, IDatabaseUtility? databaseUtility) : base(dbContext)
     {
@@ -233,5 +236,33 @@ public class Repository<T> : Ardalis.Specification.EntityFrameworkCore.Repositor
     public virtual List<T> List(ISpecification<T> specification)
     {
         return ApplySpecification(specification).ToList();
+    }
+
+    public virtual async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction is not null)
+            throw new InvalidOperationException("A transaction has already been started.");
+        _currentTransaction = await _applicationDbContextBase.Database.BeginTransactionAsync();
+    }
+
+    public virtual async Task CommitAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction is null)
+            throw new InvalidOperationException("A transaction has not been started.");
+
+        try
+        {
+            await _currentTransaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await _currentTransaction.RollbackAsync();
+            throw;
+        }
+        finally
+        {
+            _currentTransaction.Dispose();
+            _currentTransaction = null;
+        }
     }
 }
